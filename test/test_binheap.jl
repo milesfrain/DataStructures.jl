@@ -5,13 +5,41 @@
     @testset "make heap" begin
         vs = [4, 1, 3, 2, 16, 9, 10, 14, 8, 7]
 
+        @testset "construct heap" begin
+            BinaryHeap{Int, Base.ForwardOrdering}()
+            BinaryHeap{Int, Base.ForwardOrdering}(vs)
+
+            BinaryHeap{Int, Base.ReverseOrdering}()
+            BinaryHeap{Int, Base.ReverseOrdering}(vs)
+
+            BinaryMinHeap{Int}()
+            BinaryMinHeap{Int}(vs)
+            BinaryMinHeap(vs)
+
+            BinaryMaxHeap{Int}()
+            BinaryMaxHeap{Int}(vs)
+            BinaryMaxHeap(vs)
+
+            @test true
+        end
+
+        @testset "confirm heap" begin
+            @test isheap([1, 2, 3, 4, 7, 9, 10, 14, 8, 16])
+            @test isheap([16, 14, 10, 8, 7, 3, 9, 1, 4, 2], Base.Reverse)
+
+            @test !isheap([16, 14, 10, 8, 7, 3, 9, 1, 4, 2])
+            @test !isheap([1, 2, 3, 4, 7, 9, 10, 14, 8, 16], Base.Reverse)
+            @test !isheap([15, 2, 3, 4, 7, 9, 10, 14, 8, 16])
+            @test !isheap([15, 2, 3, 4, 7, 9, 10, 14, 8, 16], Base.Reverse)
+        end
+
         @testset "make min heap" begin
             h = BinaryMinHeap(vs)
 
             @test length(h) == 10
             @test !isempty(h)
             @test top(h) == 1
-            @test isequal(h.valtree, [1, 2, 3, 4, 7, 9, 10, 14, 8, 16])
+            @test isheap([1, 2, 3, 4, 7, 9, 10, 14, 8, 16])
             @test sizehint!(h, 100) === h
         end
 
@@ -21,7 +49,7 @@
             @test length(h) == 10
             @test !isempty(h)
             @test top(h) == 16
-            @test isequal(h.valtree, [16, 14, 10, 8, 7, 3, 9, 1, 4, 2])
+            @test isheap([16, 14, 10, 8, 7, 3, 9, 1, 4, 2], Base.Reverse)
             @test sizehint!(h, 100) === h
         end
 
