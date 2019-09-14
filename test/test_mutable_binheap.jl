@@ -2,7 +2,7 @@
 
 # auxiliary functions
 
-function heap_values(h::MutableBinaryHeap{VT,Comp}) where {VT,Comp}
+function heap_values(h::MutableBinaryHeap{VT,O}) where {VT,O}
     n = length(h)
     nodes = h.nodes
     @assert length(nodes) == n
@@ -13,7 +13,7 @@ function heap_values(h::MutableBinaryHeap{VT,Comp}) where {VT,Comp}
     vs
 end
 
-function list_values(h::MutableBinaryHeap{VT,Comp}) where {VT,Comp}
+function list_values(h::MutableBinaryHeap{VT,O}) where {VT,O}
     n = length(h)
     nodes = h.nodes
     nodemap = h.node_map
@@ -27,8 +27,8 @@ function list_values(h::MutableBinaryHeap{VT,Comp}) where {VT,Comp}
     vs
 end
 
-function verify_heap(h::MutableBinaryHeap{VT,Comp}) where {VT,Comp}
-    comp = h.comparer
+function verify_heap(h::MutableBinaryHeap{VT,O}) where {VT,O}
+    ord = h.ordering
     nodes = h.nodes
     n = length(h)
     m = div(n,2)
@@ -36,13 +36,13 @@ function verify_heap(h::MutableBinaryHeap{VT,Comp}) where {VT,Comp}
         v = nodes[i].value
         lc = i * 2
         if lc <= n
-            if compare(comp, nodes[lc].value, v)
+            if Base.lt(ord, nodes[lc].value, v)
                 return false
             end
         end
         rc = lc + 1
         if rc <= n
-            if compare(comp, nodes[rc].value, v)
+            if Base.lt(ord, nodes[rc].value, v)
                 return false
             end
         end
@@ -55,7 +55,7 @@ end
     vs = [4, 1, 3, 2, 16, 9, 10, 14, 8, 7]
 
     @testset "basic tests" begin
-        h = MutableBinaryMinHeap{Int}()
+        h = MutableBinaryMinHeap(Int)
 
         @test length(h) == 0
         @test isempty(h)
@@ -86,7 +86,7 @@ end
     end
 
     @testset "hmin / push! / pop!" begin
-        hmin = MutableBinaryMinHeap{Int}()
+        hmin = MutableBinaryMinHeap(Int)
         @test length(hmin) == 0
         @test isempty(hmin)
 
@@ -117,7 +117,7 @@ end
     end
 
     @testset "hmax / push! / pop!" begin
-        hmax = MutableBinaryMaxHeap{Int}()
+        hmax = MutableBinaryMaxHeap(Int)
         @test length(hmax) == 0
         @test isempty(hmax)
 
@@ -149,7 +149,7 @@ end
     end
 
     @testset "hybrid push! and pop!" begin
-        h = MutableBinaryMinHeap{Int}()
+        h = MutableBinaryMinHeap(Int)
 
         push!(h, 5)
         push!(h, 10)
@@ -244,7 +244,7 @@ end
     end
 
     @testset "test push! and update! conversion" begin # issue 399
-        h = MutableBinaryMinHeap{Float64}()
+        h = MutableBinaryMinHeap(Float64)
         push!(h, 3.0)
         push!(h, 5)
         push!(h, Rational(4, 8))

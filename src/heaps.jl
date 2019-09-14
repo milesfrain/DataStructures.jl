@@ -55,27 +55,21 @@ abstract type AbstractMutableHeap{VT,HT} <: AbstractHeap{VT} end
 
 abstract type AbstractMinMaxHeap{VT} <: AbstractHeap{VT} end
 
-# comparer
-
-struct LessThan
-end
-
-struct GreaterThan
-end
-
-compare(c::LessThan, x, y) = x < y
-compare(c::GreaterThan, x, y) = x > y
-
 # heap implementations
 
 include("heaps/binary_heap.jl")
 include("heaps/mutable_binary_heap.jl")
-include("heaps/arrays_as_heaps.jl")
 include("heaps/minmax_heap.jl")
 
 # generic functions
 
 Base.eltype(::Type{<:AbstractHeap{T}}) where T = T
+
+#=
+Note that extract_all and extract_all_rev are slower than
+sorting the array of values in-place.
+Leaving these function here for use in testing.
+=#
 
 function extract_all!(h::AbstractHeap{VT}) where VT
     n = length(h)
@@ -97,30 +91,24 @@ end
 
 # Array functions using heaps
 
-function nextreme(comp::Comp, n::Int, arr::AbstractVector{T}) where {T, Comp}
+function nextreme(ord::Base.Ordering, n::Int, arr::AbstractVector{T}) where T
     if n <= 0
         return T[] # sort(arr)[1:n] returns [] for n <= 0
     elseif n >= length(arr)
-        return sort(arr, lt = (x, y) -> compare(comp, y, x))
+        return sort(arr, order = Base.ReverseOrdering(ord))
     end
 
-    buffer = BinaryHeap{T,Comp}()
-
-    for i = 1 : n
-        @inbounds xi = arr[i]
-        push!(buffer, xi)
-    end
+    buffer = heapify(arr[1:n], ord)
 
     for i = n + 1 : length(arr)
         @inbounds xi = arr[i]
-        if compare(comp, top(buffer), xi)
-            # This could use a pushpop method
-            pop!(buffer)
-            push!(buffer, xi)
+        if Base.lt(ord, buffer[1], xi)
+            buffer[1] = xi
+            percolate_down!(buffer, 1, ord)
         end
     end
 
-    return extract_all_rev!(buffer)
+    return sort!(buffer, order = Base.ReverseOrdering(ord))
 end
 
 """
@@ -130,8 +118,8 @@ Return the `n` largest elements of the array `arr`.
 
 Equivalent to `sort(arr, lt = >)[1:min(n, end)]`
 """
-function nlargest(n::Int, arr::AbstractVector{T}) where T
-    return nextreme(LessThan(), n, arr)
+function nlargest(n::Int, arr::AbstractVector)
+    return nextreme(FasterForward(), n, arr)
 end
 
 """
@@ -141,6 +129,6 @@ Return the `n` smallest elements of the array `arr`.
 
 Equivalent to `sort(arr, lt = <)[1:min(n, end)]`
 """
-function nsmallest(n::Int, arr::AbstractVector{T}) where T
-    return nextreme(GreaterThan(), n, arr)
+function nsmallest(n::Int, arr::AbstractVector)
+    return nextreme(FasterReverse(), n, arr)
 end
