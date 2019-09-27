@@ -9,7 +9,9 @@ using DataStructures
 using BenchmarkTools
 using Random
 
-function push_heap(h::AbstractHeap, xs::Vector{Float64})
+#include("mystruct.jl")
+
+function push_heap(h::AbstractHeap, xs::Vector)
     n = length(xs)
 
     for i = 1 : n
@@ -25,17 +27,83 @@ function pop_heap(h::AbstractHeap)
     end
 end
 
-Random.seed!(0)
-xs = rand(10^6)
-
 const SUITE = BenchmarkGroup()
 
-SUITE["heap"] = BenchmarkGroup(["binaryheap"])
-SUITE[["heap","basic", "min", "push"]] =
-    @benchmarkable push_heap(h, $xs) setup=(h=BinaryMinHeap{Float64}())
-SUITE[["heap","basic", "min", "pop"]] =
-    @benchmarkable pop_heap(h) setup=(h=BinaryMinHeap{Float64}($xs))
-SUITE[["heap","mutable", "min", "push"]] =
-    @benchmarkable push_heap(h, $xs) setup=(h=MutableBinaryMinHeap{Float64}())
-SUITE[["heap","mutable", "min", "pop"]] =
-    @benchmarkable pop_heap(h) setup=(h=MutableBinaryMinHeap{Float64}($xs))
+heaptypes = [BinaryHeap, MutableBinaryHeap]
+aexps = [1,3]
+datatypes = [Int, Float64] #, MyStruct]
+baseorderings = Dict(
+    "Min" => DataStructures.LessThan,
+    #"Max" => Base.Reverse,
+    )
+floatorderings = Dict(
+    #"FastMin" => DataStructures.FasterForward(),
+    #"FastMax" => DataStructures.FasterReverse(),
+    )
+structorderings = Dict(
+    #"StructMin" => mystruct_ordering,
+    #"StructMax" => Base.ReverseOrdering(mystruct_ordering),
+    )
+
+for heap in heaptypes
+    for aexp in aexps
+        for dt in datatypes
+            Random.seed!(0)
+            a = rand(dt, 10^aexp)
+
+            orderings = baseorderings
+            if dt == Float64
+                orderings = merge(floatorderings, baseorderings)
+            #elseif dt == MyStruct
+            #    orderings = merge(structorderings, baseorderings)
+            end
+
+            for (ord_str, ord) in orderings
+                prepath = [string(heap)]
+                postpath = [string(dt), "10^"*string(aexp), ord_str]
+                SUITE[vcat(["heap"], prepath, ["make"], postpath)] =
+                    @benchmarkable $(heap){$dt,$ord}($a)
+                SUITE[vcat(["heap"], prepath, ["push"], postpath)] =
+                    @benchmarkable push_heap(h, $a) setup=(h=$(heap){$dt,$ord}())
+                SUITE[vcat(["heap"], prepath, ["pop"], postpath)] =
+                    @benchmarkable pop_heap(h) setup=(h=$(heap){$dt,$ord}($a))
+            end
+        end
+    end
+end
+
+# Quick check to ensure no Float regressions with Min/Max convenience functions
+# These don't fit in well with the above loop, since ordering is hardcoded.
+heapalias = Dict(
+    "BinaryMinHeap" => BinaryMinHeap,
+    "BinaryMaxHeap" => BinaryMaxHeap,
+    "BinaryMinMaxHeap" => BinaryMinMaxHeap, # <- no alias issue
+)
+for (heapname, heap) in heapalias
+    for aexp in aexps
+        for dt in [Float64]
+            Random.seed!(0)
+            a = rand(dt, 10^aexp)
+            prepath = [heapname]
+            postpath = [string(dt), "10^"*string(aexp)]
+            SUITE[vcat(["heap"], prepath, ["make"], postpath)] =
+                @benchmarkable $(heap)($a)
+            SUITE[vcat(["heap"], prepath, ["push"], postpath)] =
+                @benchmarkable push_heap(h, $a) setup=(h=$(heap){$dt}())
+            SUITE[vcat(["heap"], prepath, ["pop"], postpath)] =
+                @benchmarkable pop_heap(h) setup=(h=$(heap)($a))
+        end
+    end
+end
+
+for func in [nlargest, nsmallest]
+    for aexp in [4]
+        Random.seed!(0);
+        a = rand(10^aexp);
+        for nexp in [2]
+            n = 10^nexp
+            SUITE[["heap", string(func), "a=rand(10^"*string(aexp)*")", "n=10^"*string(nexp)]] =
+                @benchmarkable $(func)($n, $a)
+        end
+    end
+end
