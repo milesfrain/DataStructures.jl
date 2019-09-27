@@ -5,13 +5,23 @@
     @testset "make heap" begin
         vs = [4, 1, 3, 2, 16, 9, 10, 14, 8, 7]
 
+        @testset "confirm heap" begin
+            @test isheap([1, 2, 3, 4, 7, 9, 10, 14, 8, 16])
+            @test isheap([16, 14, 10, 8, 7, 3, 9, 1, 4, 2], Base.Reverse)
+
+            @test !isheap([16, 14, 10, 8, 7, 3, 9, 1, 4, 2])
+            @test !isheap([1, 2, 3, 4, 7, 9, 10, 14, 8, 16], Base.Reverse)
+            @test !isheap([15, 2, 3, 4, 7, 9, 10, 14, 8, 16])
+            @test !isheap([15, 2, 3, 4, 7, 9, 10, 14, 8, 16], Base.Reverse)
+        end
+
         @testset "make min heap" begin
             h = BinaryMinHeap(vs)
 
             @test length(h) == 10
             @test !isempty(h)
             @test top(h) == 1
-            @test isequal(h.valtree, [1, 2, 3, 4, 7, 9, 10, 14, 8, 16])
+            @test isheap([1, 2, 3, 4, 7, 9, 10, 14, 8, 16])
             @test sizehint!(h, 100) === h
         end
 
@@ -21,13 +31,13 @@
             @test length(h) == 10
             @test !isempty(h)
             @test top(h) == 16
-            @test isequal(h.valtree, [16, 14, 10, 8, 7, 3, 9, 1, 4, 2])
+            @test isheap([16, 14, 10, 8, 7, 3, 9, 1, 4, 2], Base.Reverse)
             @test sizehint!(h, 100) === h
         end
 
         @testset "push!" begin
             @testset "push! hmin" begin
-                hmin = BinaryMinHeap{Int}()
+                hmin = BinaryMinHeap(Int)
                 @test length(hmin) == 0
                 @test isempty(hmin)
 
@@ -58,7 +68,7 @@
             end
 
             @testset "push! hmax" begin
-                hmax = BinaryMaxHeap{Int}()
+                hmax = BinaryMaxHeap(Int)
                 @test length(hmax) == 0
                 @test isempty(hmax)
 
@@ -91,7 +101,7 @@
     end
 
     @testset "hybrid push! and pop!" begin
-        h = BinaryMinHeap{Int}()
+        h = BinaryMinHeap(Int)
 
         @testset "push1" begin
             push!(h, 5)
@@ -128,7 +138,7 @@
     end
 
     @testset "push! type conversion" begin # issue 399
-        h = BinaryMinHeap{Float64}()
+        h = BinaryMinHeap(Float64)
         push!(h, 3.0)
         push!(h, 5)
         push!(h, Rational(4, 8))
