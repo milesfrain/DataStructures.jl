@@ -9,8 +9,11 @@ include("arrays_as_heaps.jl")
 #################################################
 
 #=
-These structs may be substituted by Base.Forward and Base.Reverse,
-but float comparison will be 2x slower to preserve ordering with NAN values.
+FasterForward enables 2x faster float comparison versus Base.ForwardOrdering,
+but ordering is undefined if the data contains NaN values.
+Enable this higher-performance option by calling the BinaryHeap
+constructor instead of the BinaryMinHeap helper constructor.
+The same is true for FasterReverse and BinaryMaxHeap.
 =#
 struct FasterForward <: Base.Ordering end
 struct FasterReverse <: Base.Ordering end
@@ -18,25 +21,24 @@ Base.lt(o::FasterForward, a, b) = a < b
 Base.lt(o::FasterReverse, a, b) = a > b
 
 mutable struct BinaryHeap{T, O <: Base.Ordering} <: AbstractHeap{T}
-    valtree::Vector{T}
     ordering::O
+    valtree::Vector{T}
 
-    # min heap by default
-    function BinaryHeap(::Type{T}, ordering::O = FasterForward()) where {T,O}
-        new{T,O}(Vector{T}(), ordering)
+    function BinaryHeap{T, O}() where {T,O}
+        new{T,O}(O(), Vector{T}())
     end
 
-    function BinaryHeap(xs::AbstractVector{T}, ordering::O = FasterForward()) where {T,O}
+    function BinaryHeap{T, O}(xs::AbstractVector{T}) where {T,O}
+        ordering = O()
         valtree = heapify(xs, ordering)
-        new{T,O}(valtree, ordering)
+        new{T,O}(ordering, valtree)
     end
 end
 
-BinaryMinHeap(xs::AbstractVector) = BinaryHeap(xs, FasterForward())
-BinaryMaxHeap(xs::AbstractVector) = BinaryHeap(xs, FasterReverse())
-BinaryMinHeap(::Type{T}) where T = BinaryHeap(T, FasterForward())
-BinaryMaxHeap(::Type{T}) where T = BinaryHeap(T, FasterReverse())
-
+const BinaryMinHeap{T} = BinaryHeap{T, Base.ForwardOrdering}
+const BinaryMaxHeap{T} = BinaryHeap{T, Base.ReverseOrdering}
+BinaryMinHeap(xs::AbstractVector{T}) where T = BinaryMinHeap{T}(xs)
+BinaryMaxHeap(xs::AbstractVector{T}) where T = BinaryMaxHeap{T}(xs)
 
 #################################################
 #
