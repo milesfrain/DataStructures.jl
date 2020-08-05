@@ -15,6 +15,7 @@ module DataStructures
                  zero, checkbounds
 
 
+    using Compat # Provides Base.Order.ReverseOrdering(). May remove this line with julia 1.4
     using OrderedCollections
     import OrderedCollections: filter, filter!, isordered
     export OrderedDict, OrderedSet, LittleDict
@@ -27,21 +28,16 @@ module DataStructures
     export capacity, num_blocks, top_with_handle, sizehint!
 
     export Accumulator, counter, reset!, inc!, dec!
-
-    export ClassifiedCollections
-    export classified_lists, classified_sets, classified_counters
-
     export IntDisjointSets, DisjointSets, num_groups, find_root!, in_same_set, root_union!
-
     export FenwickTree, length, inc!, dec!, incdec!, prefixsum
 
-    export AbstractHeap, compare, extract_all!
+    export AbstractHeap, compare, extract_all!, extract_all_rev!
     export BinaryHeap, BinaryMinHeap, BinaryMaxHeap, nlargest, nsmallest
     export MutableBinaryHeap, MutableBinaryMinHeap, MutableBinaryMaxHeap
     export heapify!, heapify, heappop!, heappush!, isheap
     export BinaryMinMaxHeap, popmin!, popmax!, popall!
 
-    export Trie, subtrie, keys_with_prefix, path
+    export Trie, subtrie, keys_with_prefix, partial_path
 
     export LinkedList, Nil, Cons, nil, cons, head, tail, list, filter, cat,
            reverse
@@ -70,7 +66,6 @@ module DataStructures
     include("stack.jl")
     include("queue.jl")
     include("accumulator.jl")
-    include("classified_collections.jl")
     include("disjoint_set.jl")
     include("heaps.jl")
 

@@ -107,6 +107,9 @@ end
         end
         @test get_KeyError
     end
+
+    h = RobinDict{Char, Int}()
+    @test_throws KeyError h[0.01] 
 end
 
 @testset "Filter function" begin
@@ -214,7 +217,7 @@ end
     @test eq(RobinDict(), sizehint!(RobinDict(),96))
 
     # Dictionaries of different types
-    @test_throws MethodError eq(RobinDict(1 => 2), RobinDict("dog" => "bone"))
+    @test !eq(RobinDict(1 => 2), RobinDict("dog" => "bone"))
     @test eq(RobinDict{Int,Int}(), RobinDict{AbstractString,AbstractString}())
 end
 
@@ -310,14 +313,14 @@ end
     @test haskey(h, 1) == true
     @test haskey(h, 2) == true
     @test haskey(h, 3) == false
-    @test_throws MethodError haskey(h, "1")
+    @test haskey(h, "1") == false
 end
 
 @testset "getkey" begin
     h = RobinDict(1=>2, 3 => 6, 5=>10)
     @test getkey(h, 1, 7) == 1
     @test getkey(h, 4, 6) == 6
-    @test_throws MethodError getkey(h, "1", 8)
+    @test getkey(h, "1", 8) == 8
 end
 
 @testset "empty" begin
@@ -357,6 +360,28 @@ end
     @test h.idxfloor == get_idxfloor(h)
     pop!(h)
     @test h.idxfloor == get_idxfloor(h) == 0
+end
+
+@testset "merge" begin
+    h1 = RobinDict("a" => 1, "b" => 2)
+    h2 = RobinDict("c" => 3, "d" => 4)
+    d = merge(h1, h2)
+    @test isa(d, RobinDict{String, Int})
+    @test length(d) == 4
+    @test d["a"] == 1
+    @test d["b"] == 2
+    @test d["c"] == 3
+    @test d["d"] == 4
+end
+
+@testset "merge with combine function" begin
+    h1 = RobinDict("a" => 1, "b" => 2)
+    h2 = RobinDict("b" => 3, "c" => 4)
+    d = merge(+, h1, h2)
+    @test isa(d, RobinDict{String, Int})
+    @test d["b"] == 5
+    @test d["a"] == 1
+    @test d["c"] == 4
 end
 
 @testset "invariants" begin
